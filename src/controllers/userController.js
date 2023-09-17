@@ -141,7 +141,7 @@ const VerifyEmail = async (optInfo) => {
       const verifiedUser = await User.findByIdAndUpdate(findUser._id, userData);
       const accessToken = await GenerateSignature({
         email: verifiedUser.email,
-        user_type: verifiedUser.user_type,
+        role: verifiedUser.role,
       });
       const user = Exclude(verifiedUser.toObject(), [
         "password",
@@ -156,7 +156,7 @@ const VerifyEmail = async (optInfo) => {
       ]);
       return { status: true, data: { user, accessToken } };
     } else {
-      return { status: false, message: "Otp is expired or incorrect!" };
+      return { status: false, message: "OTP is expired or incorrect!" };
     }
   } catch (error) {
     console.error("Error", error);

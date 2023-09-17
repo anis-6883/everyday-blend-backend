@@ -1,4 +1,4 @@
-const app = require("./src/app");
+const app = require("./config/server");
 
 const startServer = async () => {
   try {
