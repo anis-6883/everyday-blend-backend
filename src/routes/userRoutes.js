@@ -112,6 +112,39 @@ router.post(
 );
 
 
+// Route for changing user password
+router.put(
+  "/change-password",
+  [
+    body("email")
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format"),
+    body("oldPassword").notEmpty().withMessage("Old password is required"),
+    body("newPassword").notEmpty().withMessage("New password is required"),
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ status: false, errors: errors.array() });
+      }
+
+      const { email, oldPassword, newPassword } = req.body;
+
+      // Call the controller function to change the password
+      const data = await userController.ChangePassword({ email, oldPassword, newPassword });
+
+      return res.json(data);
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+);
+
+
 // Route for user profile
 router.post(
   "/profile",

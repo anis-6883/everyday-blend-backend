@@ -193,6 +193,40 @@ const ResendOTP = async (userInfo) => {
   }
 };
 
+const ChangePassword = async ({ email, oldPassword, newPassword }) => {
+  try {
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    const isPasswordValid = await ValidatePassword(oldPassword, existingUser.password, existingUser.salt);
+
+    if (!isPasswordValid) {
+      return { status: false, message: "Invalid old password" };
+    }
+
+    if (oldPassword === newPassword) {
+      return { status: false, message: "New password cannot be the same as the old password" };
+    }
+
+    const newSalt = await GenerateSalt();
+    const hashedNewPassword = await GeneratePassword(newPassword, newSalt);
+
+    existingUser.password = hashedNewPassword;
+    existingUser.salt = newSalt;
+
+    await existingUser.save();
+
+    return { status: true, message: "Password changed successfully" };
+  } catch (error) {
+    console.error("Error in Change Password:", error);
+    throw new Error("Failed to change password");
+  }
+};
+
+
 
 // Get User Profile
 const GetProfile = async (userInfo) => {
@@ -302,4 +336,5 @@ module.exports = {
   GetProfile,
   UpdateProfile,
   DeleteUser,
+  ChangePassword
 };
