@@ -86,6 +86,32 @@ router.post(
   }
 );
 
+// Route to resend verification email
+router.post(
+  "/resend-otp",
+  [
+    body("email").isEmail().withMessage("Invalid email format"),
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ status: false, errors: errors.array() });
+      }
+
+      const { email } = req.body;
+
+      const data = await userController.ResendOTP({ email });
+
+      return res.json(data);
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+);
+
+
 // Route for user profile
 router.post(
   "/profile",
