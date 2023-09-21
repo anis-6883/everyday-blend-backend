@@ -275,6 +275,24 @@ const UpdateProfile = async (updatedUserInfo) => {
 };
 
 
+const DeleteUser = async (userInfo) => {
+  try {
+    const { email } = userInfo;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    await User.deleteOne({ email });
+
+    return { status: true, message: "User deleted successfully" };
+  } catch (error) {
+    console.error("Error in Delete User:", error);
+    throw new Error("Failed to delete user");
+  }
+};
 
 module.exports = {
   CreateUser,
@@ -283,4 +301,5 @@ module.exports = {
   ResendOTP,
   GetProfile,
   UpdateProfile,
+  DeleteUser,
 };

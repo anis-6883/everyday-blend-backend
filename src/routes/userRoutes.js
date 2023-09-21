@@ -171,4 +171,32 @@ router.put(
   }
 );
 
+router.delete(
+  "/delete",
+  [
+    body("email")
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format"),
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ status: false, errors: errors.array() });
+      }
+
+      const { email } = req.body;
+      const data = await userController.DeleteUser({ email });
+
+      return res.json(data);
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+);
+
+
 module.exports = router;
