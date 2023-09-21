@@ -141,4 +141,34 @@ router.post(
   }
 );
 
+
+// Route for updating user profile
+router.put(
+  "/profile",
+  [
+    body("email")
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format"),
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ status: false, errors: errors.array() });
+      }
+
+      const { email, name, image, role } = req.body;
+
+      const data = await userController.UpdateProfile({ email, name, image, role });
+
+      return res.json(data);
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+);
+
 module.exports = router;

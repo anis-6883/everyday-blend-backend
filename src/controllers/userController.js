@@ -229,10 +229,58 @@ const GetProfile = async (userInfo) => {
   }
 };
 
+
+// Update User Profile
+
+const UpdateProfile = async (updatedUserInfo) => {
+  try {
+    const { email, name, image, role } = updatedUserInfo;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    if (name) {
+      existingUser.name = name;
+    }
+
+    if (image) {
+      existingUser.image = image;
+    }
+
+    if (role) {
+      existingUser.role = role;
+    }
+
+    await existingUser.save();
+
+    const userWithoutSensitiveInfo = {
+      ...existingUser.toObject(),
+      password: undefined,
+      salt: undefined,
+      verify_code: undefined,
+      provider: undefined,
+      forget_code: undefined,
+      createdAt: undefined,
+      updatedAt: undefined,
+    };
+
+    return { status: true, message: "User profile updated", user: userWithoutSensitiveInfo };
+  } catch (error) {
+    console.error("Error in Update Profile:", error);
+    throw new Error("Failed to update user profile");
+  }
+};
+
+
+
 module.exports = {
   CreateUser,
   SignIn,
   VerifyEmail,
-  GetProfile,
   ResendOTP,
+  GetProfile,
+  UpdateProfile,
 };
