@@ -164,6 +164,70 @@ const VerifyEmail = async (optInfo) => {
   }
 };
 
+// Resend OTP
+const ResendOTP = async (userInfo) => {
+  try {
+    const { email } = userInfo;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    if (existingUser.email_verified !== 0) {
+      return { status: false, message: "Email is already verified" };
+    }
+
+    const otp = generateVerificationCode(6);
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    await User.findByIdAndUpdate(existingUser._id, { verify_code: hashedOtp });
+
+    await sendVerificationEmail(existingUser.email, otp);
+
+    return { status: true, message: "New OTP sent successfully!" };
+  } catch (error) {
+    console.error("Error in Resend Verification Email:", error);
+    throw new Error("Failed to resend verification email");
+  }
+};
+
+const ChangePassword = async ({ email, oldPassword, newPassword }) => {
+  try {
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    const isPasswordValid = await ValidatePassword(oldPassword, existingUser.password, existingUser.salt);
+
+    if (!isPasswordValid) {
+      return { status: false, message: "Invalid old password" };
+    }
+
+    if (oldPassword === newPassword) {
+      return { status: false, message: "New password cannot be the same as the old password" };
+    }
+
+    const newSalt = await GenerateSalt();
+    const hashedNewPassword = await GeneratePassword(newPassword, newSalt);
+
+    existingUser.password = hashedNewPassword;
+    existingUser.salt = newSalt;
+
+    await existingUser.save();
+
+    return { status: true, message: "Password changed successfully" };
+  } catch (error) {
+    console.error("Error in Change Password:", error);
+    throw new Error("Failed to change password");
+  }
+};
+
+
+
 // Get User Profile
 const GetProfile = async (userInfo) => {
   try {
@@ -199,9 +263,78 @@ const GetProfile = async (userInfo) => {
   }
 };
 
+
+// Update User Profile
+
+const UpdateProfile = async (updatedUserInfo) => {
+  try {
+    const { email, name, image, role } = updatedUserInfo;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    if (name) {
+      existingUser.name = name;
+    }
+
+    if (image) {
+      existingUser.image = image;
+    }
+
+    if (role) {
+      existingUser.role = role;
+    }
+
+    await existingUser.save();
+
+    const userWithoutSensitiveInfo = {
+      ...existingUser.toObject(),
+      password: undefined,
+      salt: undefined,
+      verify_code: undefined,
+      provider: undefined,
+      forget_code: undefined,
+      createdAt: undefined,
+      updatedAt: undefined,
+    };
+
+    return { status: true, message: "User profile updated", user: userWithoutSensitiveInfo };
+  } catch (error) {
+    console.error("Error in Update Profile:", error);
+    throw new Error("Failed to update user profile");
+  }
+};
+
+
+const DeleteUser = async (userInfo) => {
+  try {
+    const { email } = userInfo;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      return { status: false, message: "User not found" };
+    }
+
+    await User.deleteOne({ email });
+
+    return { status: true, message: "User deleted successfully" };
+  } catch (error) {
+    console.error("Error in Delete User:", error);
+    throw new Error("Failed to delete user");
+  }
+};
+
 module.exports = {
   CreateUser,
   SignIn,
   VerifyEmail,
+  ResendOTP,
   GetProfile,
+  UpdateProfile,
+  DeleteUser,
+  ChangePassword
 };
