@@ -1,14 +1,16 @@
-const { ValidateSignature } = require("../utils");
+const { validateSignature } = require("../helpers");
 
 const userAuth = async (req, res, next) => {
-  const isAuthorized = await ValidateSignature(req);
+  const isAuthorized = await validateSignature(req);
 
   console.log("IsAuthorized", isAuthorized);
 
   if (isAuthorized) {
     return next();
   }
-  return res.status(401).json({ message: "Unauthorized: Please log in first" });
+  return res
+    .status(401)
+    .json({ message: "Unauthorized: Please log in first!" });
 };
 
 const userAuthorization = (req, res, next) => {
@@ -37,7 +39,7 @@ const verifyApiKeyGet = (req, res, next) => {
   if (API_KEY !== process.env.API_KEY) {
     res.status(401).json({
       status: false,
-      message: "Unauthorized: Invalid API key or API key not found",
+      message: "Unauthorized: Invalid API key or API key not found!",
     });
   } else {
     next();

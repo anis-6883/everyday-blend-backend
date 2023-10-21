@@ -9,7 +9,7 @@
     "start-dev": "nodemon index.js"
   },
   "keywords": [],
-  "author": "dev.kbin",
+  "author": "Muhammad Anisuzzaman",
   "license": "ISC",
   "engines": {
     "node": ">=16.13"

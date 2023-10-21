@@ -2,7 +2,7 @@ const app = require("./config/server");
 
 const startServer = async () => {
   try {
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 8000;
     app.listen(PORT);
     console.log(`Server is running on port ${PORT}`);
   } catch (error) {

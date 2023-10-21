@@ -3,26 +3,26 @@ const jwt = require("jsonwebtoken");
 
 const APP_SECRET = process.env.APP_SECRET;
 
-//Utility functions
+// Helper Functions
 module.exports.GenerateSalt = async () => {
   return await bcrypt.genSalt();
 };
 
-module.exports.GeneratePassword = async (password, salt) => {
+module.exports.generatePassword = async (password, salt) => {
   return await bcrypt.hash(password, salt);
 };
 
-module.exports.ValidatePassword = async (
+module.exports.validatePassword = async (
   enteredPassword,
   savedPassword,
   salt
 ) => {
-  return (await this.GeneratePassword(enteredPassword, salt)) === savedPassword;
+  return (await this.generatePassword(enteredPassword, salt)) === savedPassword;
 };
 
-module.exports.GenerateSignature = async (payload) => {
+module.exports.generateSignature = async (payload, time) => {
   try {
-    return jwt.sign(payload, process.env.APP_SECRET, { expiresIn: "7d" });
+    return jwt.sign(payload, APP_SECRET, { expiresIn: time });
   } catch (error) {
     console.log(error);
     return error;
@@ -49,13 +49,8 @@ module.exports.GenerateVerificationToken = async (payload) => {
 
 module.exports.CheckOptValidity = async (opt, hashedOtp) => {
   try {
-    await bcrypt.compare(opt, hashedOtp, (err, result) => {
-      if (err) {
-        return false;
-      } else {
-        return true;
-      }
-    });
+    const result = await bcrypt.compare(opt, hashedOtp);
+    return result;
   } catch (error) {
     console.log(error);
     return error;
@@ -69,14 +64,11 @@ module.exports.IsTimestampSmallerThanTwoMinutesAgo = (timestamp) => {
   return timeDifference <= 120000;
 };
 
-module.exports.ValidateSignature = async (req) => {
+module.exports.validateSignature = async (req) => {
   try {
     //const signature = req.get("Authorization"); //Another way from direct Authorization
     const signature = req.headers.authorization; //Taking auth token from headers
-    const payload = await jwt.verify(
-      signature.split(" ")[1],
-      process.env.APP_SECRET
-    );
+    const payload = jwt.verify(signature.split(" ")[1], APP_SECRET);
     req.user = payload;
     return true;
   } catch (error) {
@@ -85,7 +77,7 @@ module.exports.ValidateSignature = async (req) => {
   }
 };
 
-module.exports.ExcludeMany = async (array, keys) => {
+module.exports.excludeMany = async (array, keys) => {
   let newArray = [];
   array?.map((item) => {
     for (let key of keys) {
@@ -96,11 +88,11 @@ module.exports.ExcludeMany = async (array, keys) => {
   return newArray;
 };
 
-module.exports.Exclude = (user, keys) => {
+module.exports.exclude = (object, keys) => {
   for (let key of keys) {
-    delete user[key];
+    delete object[key];
   }
-  return user;
+  return object;
 };
 
 module.exports.FormateData = (data) => {

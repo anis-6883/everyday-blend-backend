@@ -1,18 +1,20 @@
 const sendVerificationEmail = require("../middleware/sendEmailVerification");
 const User = require("../models/User");
 const {
-  Exclude,
-  GenerateSignature,
+  exclude,
+  generateSignature,
   GeneratePassword,
   GenerateSalt,
-  ValidatePassword,
+  validatePassword,
   generateVerificationCode,
   GenerateVerificationToken,
   CheckOptValidity,
   IsTimestampSmallerThanTwoMinutesAgo,
-} = require("../utils");
+} = require("../helpers");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
+const EXPIRE_TIME = 60 * 60 * 20 * 1000; // 20 Hours
 
 // Create New User
 const CreateUser = async (userInputs) => {
@@ -68,26 +70,39 @@ const CreateUser = async (userInputs) => {
   }
 };
 
-const SignIn = async (userInfo) => {
+// User Sign In
+const signIn = async (userInfo) => {
   try {
     const { email, password } = userInfo;
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      const validPassword = await ValidatePassword(
+      const validPassword = await validatePassword(
         password,
         existingUser.password,
         existingUser.salt
       );
 
       if (validPassword) {
-        const token = await GenerateSignature({
-          email: existingUser.email,
-          id: existingUser._id,
-          user_type: existingUser.user_type,
-        });
+        const accessToken = await generateSignature(
+          {
+            email: existingUser.email,
+            role: existingUser.role,
+          },
+          60 * 60 * 24 // 1 Day
+        );
 
-        const user = Exclude(existingUser.toObject(), [
+        const refreshToken = await generateSignature(
+          {
+            email: existingUser.email,
+            role: existingUser.role,
+          },
+          60 * 60 * 24 * 7 // 7 Days
+        );
+
+        const user = exclude(existingUser.toObject(), [
+          "_id",
+          "__v",
           "password",
           "salt",
           "verify_code",
@@ -98,9 +113,13 @@ const SignIn = async (userInfo) => {
         ]);
         return {
           status: true,
-          message: "Logged In successfully",
-          accessToken: token,
-          user,
+          message: "Login successfully!",
+          data: {
+            accessToken,
+            refreshToken,
+            expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
+            ...user,
+          },
         };
       } else {
         return {
@@ -120,18 +139,58 @@ const SignIn = async (userInfo) => {
   }
 };
 
+// Get Access Token
+const getAccessToken = async (userInfo) => {
+  try {
+    const accessToken = await generateSignature(
+      {
+        email: userInfo.email,
+        role: userInfo.role,
+      },
+      60 * 60 * 24 // 1 Day
+    );
+
+    const refreshToken = await generateSignature(
+      {
+        email: userInfo.email,
+        role: userInfo.role,
+      },
+      60 * 60 * 24 * 7 // 7 Days
+    );
+
+    return {
+      status: true,
+      message: "Access Token refresh successfully!",
+      data: {
+        accessToken,
+        refreshToken,
+        expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
+      },
+    };
+  } catch (error) {
+    console.error("Error in Sign In:", error);
+    throw new Error("Failed to Sign In user");
+  }
+};
+
+// Verify Email
 const VerifyEmail = async (optInfo) => {
   try {
     const { token, otp } = optInfo;
     const decode = jwt.verify(token, process.env.APP_SECRET);
     const email = decode.email;
     const findUser = await User.findOne({ email });
+
     if (!findUser) {
       return { status: false, message: "Otp is expired or incorrect!" };
     }
+
+    // console.log(findUser);
+
     const hashedOtp = findUser.verify_code;
-    const isValidOpt = CheckOptValidity(otp, hashedOtp);
+    const isValidOpt = await CheckOptValidity(otp, hashedOtp);
     const isValidTime = IsTimestampSmallerThanTwoMinutesAgo(findUser.createdAt);
+
     if (isValidOpt && isValidTime) {
       const userData = {
         email_verified: 1,
@@ -139,7 +198,7 @@ const VerifyEmail = async (optInfo) => {
         verify_code: null,
       };
       const verifiedUser = await User.findByIdAndUpdate(findUser._id, userData);
-      const accessToken = await GenerateSignature({
+      const accessToken = await generateSignature({
         email: verifiedUser.email,
         role: verifiedUser.role,
       });
@@ -193,6 +252,7 @@ const ResendOTP = async (userInfo) => {
   }
 };
 
+// Change Password
 const ChangePassword = async ({ email, oldPassword, newPassword }) => {
   try {
     const existingUser = await User.findOne({ email });
@@ -201,14 +261,21 @@ const ChangePassword = async ({ email, oldPassword, newPassword }) => {
       return { status: false, message: "User not found" };
     }
 
-    const isPasswordValid = await ValidatePassword(oldPassword, existingUser.password, existingUser.salt);
+    const isPasswordValid = await validatePassword(
+      oldPassword,
+      existingUser.password,
+      existingUser.salt
+    );
 
     if (!isPasswordValid) {
       return { status: false, message: "Invalid old password" };
     }
 
     if (oldPassword === newPassword) {
-      return { status: false, message: "New password cannot be the same as the old password" };
+      return {
+        status: false,
+        message: "New password cannot be the same as the old password",
+      };
     }
 
     const newSalt = await GenerateSalt();
@@ -226,8 +293,6 @@ const ChangePassword = async ({ email, oldPassword, newPassword }) => {
   }
 };
 
-
-
 // Get User Profile
 const GetProfile = async (userInfo) => {
   try {
@@ -239,7 +304,9 @@ const GetProfile = async (userInfo) => {
       throw new Error("No Profile");
     }
 
-    const userWithoutSensitiveInfo = Exclude(existingUser.toObject(), [
+    const userWithoutSensitiveInfo = exclude(existingUser.toObject(), [
+      "_id",
+      "__v",
       "password",
       "salt",
       "verify_code",
@@ -255,6 +322,7 @@ const GetProfile = async (userInfo) => {
       user: userWithoutSensitiveInfo,
     };
   } catch (error) {
+    console.log(error);
     if (error.message === "No Profile") {
       throw new Error("User profile does not exist");
     } else {
@@ -263,9 +331,7 @@ const GetProfile = async (userInfo) => {
   }
 };
 
-
 // Update User Profile
-
 const UpdateProfile = async (updatedUserInfo) => {
   try {
     const { email, name, image, role } = updatedUserInfo;
@@ -301,14 +367,18 @@ const UpdateProfile = async (updatedUserInfo) => {
       updatedAt: undefined,
     };
 
-    return { status: true, message: "User profile updated", user: userWithoutSensitiveInfo };
+    return {
+      status: true,
+      message: "User profile updated",
+      user: userWithoutSensitiveInfo,
+    };
   } catch (error) {
     console.error("Error in Update Profile:", error);
     throw new Error("Failed to update user profile");
   }
 };
 
-
+// Delete User Account
 const DeleteUser = async (userInfo) => {
   try {
     const { email } = userInfo;
@@ -330,11 +400,12 @@ const DeleteUser = async (userInfo) => {
 
 module.exports = {
   CreateUser,
-  SignIn,
+  signIn,
+  getAccessToken,
   VerifyEmail,
   ResendOTP,
   GetProfile,
   UpdateProfile,
   DeleteUser,
-  ChangePassword
+  ChangePassword,
 };
