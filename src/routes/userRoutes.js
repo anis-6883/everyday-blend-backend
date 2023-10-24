@@ -20,17 +20,18 @@ router.post(
         return res.status(400).json({ status: false, errors: errors.array() });
       }
 
-      const { name, email, password, provider } = req.body;
+      const { name, email, password, provider, image } = req.body;
       const userData = {
         name,
         email,
         password,
         provider,
+        image,
       };
 
-      const newUser = await userController.CreateUser(userData);
+      const newUser = await userController.createUser(userData);
 
-      return res.status(201).json(newUser);
+      return res.status(200).json(newUser);
     } catch (error) {
       console.error(error);
       next(error);
@@ -77,7 +78,7 @@ router.post(
 
       const { otp } = req.body;
       const { token } = req.headers;
-      const data = await userController.VerifyEmail({ token, otp });
+      const data = await userController.verifyEmail({ token, otp });
 
       return res.json(data);
     } catch (error) {

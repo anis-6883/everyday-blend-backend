@@ -1,11 +1,11 @@
 const Folder = require("../models/Folder");
-const { Exclude } = require("../helpers");
+const { exclude } = require("../helpers");
 
 const createFolder = async (folderData) => {
   try {
     const newFolder = await Folder.create(folderData);
 
-    const folder = Exclude(newFolder.toObject(), [
+    const folder = exclude(newFolder.toObject(), [
       "id",
       "createdAt",
       "updatedAt",

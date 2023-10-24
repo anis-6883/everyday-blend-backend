@@ -3,13 +3,14 @@ const User = require("../models/User");
 const {
   exclude,
   generateSignature,
-  GeneratePassword,
-  GenerateSalt,
+  generatePassword,
+  generateSalt,
   validatePassword,
   generateVerificationCode,
-  GenerateVerificationToken,
-  CheckOptValidity,
-  IsTimestampSmallerThanTwoMinutesAgo,
+  generateVerificationToken,
+  checkOptValidity,
+  checkTimeValidity,
+  capitalizeFirstLetter,
 } = require("../helpers");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -17,56 +18,131 @@ const jwt = require("jsonwebtoken");
 const EXPIRE_TIME = 60 * 60 * 20 * 1000; // 20 Hours
 
 // Create New User
-const CreateUser = async (userInputs) => {
+const createUser = async (userInputs) => {
   try {
-    const { email, password, provider } = userInputs;
+    const { name, email, password, provider, image } = userInputs;
 
     const existingUser = await User.findOne({ email });
 
-    if (existingUser && existingUser.email_verified !== 0) {
-      return { status: false, message: "This email already exist!" };
+    if (existingUser) {
+      // Case 1: User exists, email unverified, delete the existing user
+      if (existingUser.email_verified === 0) {
+        await User.deleteOne({ email: email });
+      }
+
+      // Case 2: User exists, email verified, and email provider
+      if (
+        existingUser.email_verified === 1 &&
+        existingUser.provider === "email" &&
+        provider === "email"
+      ) {
+        return { status: false, message: "This email already exists!" };
+      }
+
+      // Case 3: User exists, email verified, different provider (prevent manual registration)
+      if (
+        existingUser.email_verified === 1 &&
+        existingUser.provider !== "email" &&
+        provider === "email"
+      ) {
+        return {
+          status: false,
+          message: `Please Try, Sign Up with ${capitalizeFirstLetter(
+            existingUser.provider
+          )}!`,
+        };
+      }
     }
 
-    if (existingUser && existingUser.email_verified === 0) {
-      await User.deleteOne({ email: existingUser.email });
-    }
+    const salt = await generateSalt();
+    const hashedPassword = await generatePassword(password, salt);
 
-    const salt = await GenerateSalt();
-    const hashedPassword = await GeneratePassword(password, salt);
+    let newUser = existingUser;
 
-    if (provider === "email") {
-      const otp = generateVerificationCode(6);
-
-      const hashedOtp = await bcrypt.hash(otp, 10);
-
-      const newUser = new User({
-        name: userInputs.name,
-        email: email,
+    if (!newUser) {
+      // Create a new user if not exists
+      newUser = new User({
+        name,
+        email,
+        provider,
+        image,
         password: hashedPassword,
-        provider: userInputs.provider,
-        salt: salt,
-        verify_code: hashedOtp,
+        salt,
+        email_verified: provider === "email" ? 0 : 1,
+        status: 1,
       });
 
       await newUser.save();
-      // Send Email
-      await sendVerificationEmail(newUser?.email, otp);
+    }
 
-      // Generate access token
-      const accessToken = await GenerateVerificationToken({
+    if (provider === "email") {
+      // Case 4: User is registered with email provider
+      const otp = generateVerificationCode(6);
+      const hashedOtp = await bcrypt.hash(otp, 10);
+
+      // Save verify code
+      await newUser.updateOne({ verify_code: hashedOtp });
+
+      // Send Email
+      await sendVerificationEmail(newUser.email, otp);
+
+      // Generate Temporary Access Token
+      const accessToken = await generateVerificationToken({
         email: newUser.email,
       });
 
-      return { status: true, accessToken, message: "OTP send successfully!" };
-    } else {
-      return { status: false };
+      return {
+        status: true,
+        data: { accessToken },
+        message: "OTP sent successfully!",
+      };
     }
+
+    // Case 5: User registered via social provider
+    const accessToken = await generateSignature(
+      {
+        email: newUser.email,
+        role: newUser.role,
+      },
+      60 * 60 * 24 // 1 Day
+    );
+
+    const refreshToken = await generateSignature(
+      {
+        email: newUser.email,
+        role: newUser.role,
+      },
+      60 * 60 * 24 * 7 // 7 Days
+    );
+
+    const user = exclude(newUser.toObject(), [
+      "_id",
+      "__v",
+      "password",
+      "salt",
+      "verify_code",
+      "provider",
+      "forget_code",
+      "createdAt",
+      "updatedAt",
+    ]);
+
+    return {
+      status: true,
+      message: "Login successfully!",
+      data: {
+        accessToken,
+        refreshToken,
+        expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
+        ...user,
+      },
+    };
   } catch (error) {
     console.error("Error", error);
     if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
       throw new Error("Email is already exist!");
     }
-    throw new Error("Failed to create user");
+    throw new Error("Failed to create user!");
   }
 };
 
@@ -76,57 +152,78 @@ const signIn = async (userInfo) => {
     const { email, password } = userInfo;
     const existingUser = await User.findOne({ email });
 
-    if (existingUser) {
-      const validPassword = await validatePassword(
-        password,
-        existingUser.password,
-        existingUser.salt
+    if (!existingUser) {
+      return {
+        status: false,
+        message: "Your credentials are incorrect!",
+      };
+    }
+
+    if (existingUser.email_verified === 0) {
+      await User.deleteOne({ email: existingUser.email });
+      return {
+        status: false,
+        message: "Your credentials are incorrect!",
+      };
+    }
+
+    if (
+      existingUser.email_verified === 1 &&
+      existingUser.provider !== "email"
+    ) {
+      return {
+        status: false,
+        message: `Please Try, Sign In with ${capitalizeFirstLetter(
+          existingUser.provider
+        )}!`,
+      };
+    }
+
+    const validPassword = await validatePassword(
+      password,
+      existingUser.password,
+      existingUser.salt
+    );
+
+    if (validPassword) {
+      const accessToken = await generateSignature(
+        {
+          email: existingUser.email,
+          role: existingUser.role,
+        },
+        60 * 60 * 24 // 1 Day
       );
 
-      if (validPassword) {
-        const accessToken = await generateSignature(
-          {
-            email: existingUser.email,
-            role: existingUser.role,
-          },
-          60 * 60 * 24 // 1 Day
-        );
+      const refreshToken = await generateSignature(
+        {
+          email: existingUser.email,
+          role: existingUser.role,
+        },
+        60 * 60 * 24 * 7 // 7 Days
+      );
 
-        const refreshToken = await generateSignature(
-          {
-            email: existingUser.email,
-            role: existingUser.role,
-          },
-          60 * 60 * 24 * 7 // 7 Days
-        );
+      const user = exclude(existingUser.toObject(), [
+        "_id",
+        "__v",
+        "password",
+        "salt",
+        "verify_code",
+        "provider",
+        "forget_code",
+        "createdAt",
+        "updatedAt",
+      ]);
 
-        const user = exclude(existingUser.toObject(), [
-          "_id",
-          "__v",
-          "password",
-          "salt",
-          "verify_code",
-          "provider",
-          "forget_code",
-          "createdAt",
-          "updatedAt",
-        ]);
-        return {
-          status: true,
-          message: "Login successfully!",
-          data: {
-            accessToken,
-            refreshToken,
-            expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
-            ...user,
-          },
-        };
-      } else {
-        return {
-          status: false,
-          message: "Your credentials are incorrect or have expired!",
-        };
-      }
+      return {
+        status: true,
+        message: "Login successfully!",
+        data: {
+          accessToken,
+          refreshToken,
+          expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
+          ...user,
+        },
+      };
     } else {
       return {
         status: false,
@@ -135,7 +232,7 @@ const signIn = async (userInfo) => {
     }
   } catch (error) {
     console.error("Error in Sign In:", error);
-    throw new Error("Failed to Sign In user");
+    throw new Error("Failed to user Sign In!");
   }
 };
 
@@ -174,7 +271,7 @@ const getAccessToken = async (userInfo) => {
 };
 
 // Verify Email
-const VerifyEmail = async (optInfo) => {
+const verifyEmail = async (optInfo) => {
   try {
     const { token, otp } = optInfo;
     const decode = jwt.verify(token, process.env.APP_SECRET);
@@ -185,24 +282,38 @@ const VerifyEmail = async (optInfo) => {
       return { status: false, message: "Otp is expired or incorrect!" };
     }
 
-    // console.log(findUser);
-
     const hashedOtp = findUser.verify_code;
-    const isValidOpt = await CheckOptValidity(otp, hashedOtp);
-    const isValidTime = IsTimestampSmallerThanTwoMinutesAgo(findUser.createdAt);
+    const isValidOpt = await checkOptValidity(otp, hashedOtp);
+    const isValidTime = checkTimeValidity(findUser.createdAt);
 
     if (isValidOpt && isValidTime) {
       const userData = {
         email_verified: 1,
-        status: 1,
         verify_code: null,
       };
-      const verifiedUser = await User.findByIdAndUpdate(findUser._id, userData);
-      const accessToken = await generateSignature({
-        email: verifiedUser.email,
-        role: verifiedUser.role,
-      });
-      const user = Exclude(verifiedUser.toObject(), [
+
+      const verifiedUser = await User.findByIdAndUpdate(
+        findUser._id,
+        userData,
+        { new: true }
+      );
+
+      const accessToken = await generateSignature(
+        {
+          email: verifiedUser.email,
+          role: verifiedUser.role,
+        },
+        60 * 60 * 24 // 1 Day
+      );
+
+      const refreshToken = await generateSignature(
+        {
+          email: verifiedUser.email,
+          role: verifiedUser.role,
+        },
+        60 * 60 * 24 * 7 // 7 Days
+      );
+      const user = exclude(verifiedUser.toObject(), [
         "password",
         "salt",
         "verify_code",
@@ -213,7 +324,16 @@ const VerifyEmail = async (optInfo) => {
         "_id",
         "__v",
       ]);
-      return { status: true, data: { user, accessToken } };
+      return {
+        status: true,
+        data: {
+          accessToken,
+          refreshToken,
+          expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
+          ...user,
+        },
+        message: "Otp validated successfully!",
+      };
     } else {
       return { status: false, message: "OTP is expired or incorrect!" };
     }
@@ -278,8 +398,8 @@ const ChangePassword = async ({ email, oldPassword, newPassword }) => {
       };
     }
 
-    const newSalt = await GenerateSalt();
-    const hashedNewPassword = await GeneratePassword(newPassword, newSalt);
+    const newSalt = await generateSalt();
+    const hashedNewPassword = await generatePassword(newPassword, newSalt);
 
     existingUser.password = hashedNewPassword;
     existingUser.salt = newSalt;
@@ -399,10 +519,10 @@ const DeleteUser = async (userInfo) => {
 };
 
 module.exports = {
-  CreateUser,
+  createUser,
   signIn,
   getAccessToken,
-  VerifyEmail,
+  verifyEmail,
   ResendOTP,
   GetProfile,
   UpdateProfile,

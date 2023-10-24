@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const APP_SECRET = process.env.APP_SECRET;
 
 // Helper Functions
-module.exports.GenerateSalt = async () => {
+module.exports.generateSalt = async () => {
   return await bcrypt.genSalt();
 };
 
@@ -38,7 +38,7 @@ module.exports.GenerateTempToken = async (data) => {
   }
 };
 
-module.exports.GenerateVerificationToken = async (payload) => {
+module.exports.generateVerificationToken = async (payload) => {
   try {
     return jwt.sign(payload, process.env.APP_SECRET, { expiresIn: "1d" });
   } catch (error) {
@@ -47,7 +47,7 @@ module.exports.GenerateVerificationToken = async (payload) => {
   }
 };
 
-module.exports.CheckOptValidity = async (opt, hashedOtp) => {
+module.exports.checkOptValidity = async (opt, hashedOtp) => {
   try {
     const result = await bcrypt.compare(opt, hashedOtp);
     return result;
@@ -57,11 +57,11 @@ module.exports.CheckOptValidity = async (opt, hashedOtp) => {
   }
 };
 
-module.exports.IsTimestampSmallerThanTwoMinutesAgo = (timestamp) => {
+module.exports.checkTimeValidity = (timestamp) => {
   const inputDate = new Date(timestamp);
   const currentTime = new Date();
   const timeDifference = currentTime - inputDate;
-  return timeDifference <= 120000;
+  return timeDifference <= 120000; // 2 minutes
 };
 
 module.exports.validateSignature = async (req) => {
@@ -132,4 +132,8 @@ module.exports.generateVerificationCode = (length) => {
     counter += 1;
   }
   return result;
+};
+
+module.exports.capitalizeFirstLetter = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
 };

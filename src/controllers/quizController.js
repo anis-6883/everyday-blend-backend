@@ -1,11 +1,11 @@
 const Quiz = require("../models/Quiz");
-const { Exclude } = require("../helpers");
+const { exclude } = require("../helpers");
 
 const createQuiz = async (quizData) => {
   try {
     const newQuiz = await Quiz.create(quizData);
 
-    const quiz = Exclude(newQuiz.toObject(), ["_id", "createdAt", "updatedAt"]);
+    const quiz = exclude(newQuiz.toObject(), ["_id", "createdAt", "updatedAt"]);
 
     return { status: true, message: "Quiz created successfully", data: quiz };
   } catch (error) {

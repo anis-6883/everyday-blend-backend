@@ -27,10 +27,10 @@ async function sendVerificationEmail(email, verificationCode) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Verification email sent successfully");
+    console.log("Verification email sent successfully!");
   } catch (error) {
     console.error("Error sending verification email:", error);
-    throw new Error("Error sending verification email");
+    throw new Error("Error sending verification email!");
   }
 }
 
