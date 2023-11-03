@@ -17,7 +17,7 @@ connectToMongoDB(config[env].databaseURI);
 app.use(cors(config[env].corsOptions));
 app.use(express.json());
 
-app.use("/api/v1/admin", verifyApiKeyGet); // authentication for admin
+app.use("/api/admin", verifyApiKeyGet); // authentication for admin
 // app.use("/api/v1/web", verifyApiKeyGet); // authentication for client
 
 // Routes

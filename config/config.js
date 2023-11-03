@@ -3,11 +3,7 @@ require("dotenv").config();
 const config = {
   development: {
     corsOptions: {
-      origin: [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://windfootball-nextjs-frondend.vercel.app",
-      ],
+      origin: process.env.CORS_ORIGINS.split(","),
       credentials: true,
     },
     databaseURI: process.env.DEV_DATABASE_URL,
@@ -16,7 +12,7 @@ const config = {
   },
   production: {
     corsOptions: {
-      origin: [process.env.FRONTEND_URL],
+      origin: process.env.CORS_ORIGINS.split(","),
       credentials: true,
     },
     databaseURI: process.env.PROD_DATABASE_URL,

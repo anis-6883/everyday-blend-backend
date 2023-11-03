@@ -227,7 +227,7 @@ const signIn = async (userInfo) => {
     } else {
       return {
         status: false,
-        message: "Your credentials are incorrect or have expired!",
+        message: "Your credentials are incorrect!",
       };
     }
   } catch (error) {
