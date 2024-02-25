@@ -1,4 +1,4 @@
-import app from './config/server';
+import app from "./config/server";
 
 const startServer = async () => {
   try {
@@ -6,7 +6,7 @@ const startServer = async () => {
     app.listen(PORT);
     console.log(`Server is running on port ${PORT}`);
   } catch (error) {
-    console.error('Error starting the server:', error.message);
+    console.error("Error starting the server:", error.message);
     process.exit(1);
   }
 };

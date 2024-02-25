@@ -20,7 +20,7 @@ const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
         console.log(`Server is running on port ${PORT}`);
     }
     catch (error) {
-        console.error('Error starting the server:', error.message);
+        console.error("Error starting the server:", error.message);
         process.exit(1);
     }
 });

@@ -14,13 +14,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const connectToDatabase = (env) => __awaiter(void 0, void 0, void 0, function* () {
-    const databaseURL = env === 'production' ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
+    const databaseURL = env === "production"
+        ? process.env.PROD_DATABASE_URL
+        : process.env.DEV_DATABASE_URL;
     try {
         yield mongoose_1.default.connect(databaseURL);
-        console.log('Connected to MongoDB Database!');
+        console.log("Connected to MongoDB Database!");
     }
     catch (error) {
-        console.error('Error connecting to MongoDB:', error);
+        console.error("Error connecting to MongoDB:", error);
     }
 });
 exports.default = connectToDatabase;
