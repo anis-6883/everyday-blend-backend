@@ -7,11 +7,11 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const adminSchema = new mongoose_1.default.Schema({
     firstName: {
         type: String,
-        default: "",
+        required: true,
     },
     lastName: {
         type: String,
-        default: "",
+        required: true,
     },
     email: {
         type: String,
@@ -42,5 +42,5 @@ const adminSchema = new mongoose_1.default.Schema({
     timestamps: true,
 });
 const Admin = mongoose_1.default.model("Admin", adminSchema);
-module.exports = Admin;
+exports.default = Admin;
 //# sourceMappingURL=Admin.js.map

@@ -12,17 +12,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const server_1 = __importDefault(require("./configs/server"));
-const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
+const mongoose_1 = __importDefault(require("mongoose"));
+const config_1 = __importDefault(require("./config"));
+const connectToDatabase = (env) => __awaiter(void 0, void 0, void 0, function* () {
+    const databaseURL = config_1.default[env].databaseURI;
     try {
-        const PORT = process.env.PORT || 8080;
-        server_1.default.listen(PORT);
-        console.log(`Server is running on port ${PORT}`);
+        yield mongoose_1.default.connect(databaseURL);
+        console.log("Connected to MongoDB Database!");
     }
     catch (error) {
-        console.error("Error starting the server:", error.message);
-        process.exit(1);
+        console.error("Error connecting to MongoDB:", error);
     }
 });
-startServer();
-//# sourceMappingURL=index.js.map
+exports.default = connectToDatabase;
+//# sourceMappingURL=database.js.map

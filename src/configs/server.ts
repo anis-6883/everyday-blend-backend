@@ -19,7 +19,7 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // Connect to MongoDB with Mongoose
-connectToDatabase(config[env].databaseURI);
+connectToDatabase(env);
 
 app.get("/", (req, res) => {
   res.json({ message: "Hello World!" });
@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
 
 // Main Routes
 app.use("/api", verifyApiKeyHeader, webRoutes); // web
-app.use("/api/admin", verifyApiKeyHeader, adminRoutes); // web
+app.use("/api/admin", verifyApiKeyHeader, adminRoutes); // admin
 
 // 404 Route
 app.use((req, res, next) => {

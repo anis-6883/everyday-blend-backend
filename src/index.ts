@@ -1,4 +1,4 @@
-import app from "./config/server";
+import app from "./configs/server";
 
 const startServer = async () => {
   try {

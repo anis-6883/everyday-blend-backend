@@ -1,16 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.providerValidation = exports.passwordValidation = exports.nameValidation = exports.emailValidation = void 0;
+exports.strongPasswordValidation = exports.providerValidation = exports.passwordValidation = exports.lastNameValidation = exports.firstNameValidation = exports.emailValidation = void 0;
 const express_validator_1 = require("express-validator");
 const emailValidation = (0, express_validator_1.body)("email")
     .trim()
-    .notEmpty()
-    .withMessage("Email is required!")
     .isEmail()
-    .withMessage("Email is invalid!");
+    .withMessage("Email is invalid!")
+    .notEmpty()
+    .withMessage("Email is required!");
 exports.emailValidation = emailValidation;
-const nameValidation = (0, express_validator_1.body)("name").trim().notEmpty().withMessage("Name is required!");
-exports.nameValidation = nameValidation;
+const firstNameValidation = (0, express_validator_1.body)("firstName").trim().notEmpty().withMessage("First Name is required!");
+exports.firstNameValidation = firstNameValidation;
+const lastNameValidation = (0, express_validator_1.body)("lastName").trim().notEmpty().withMessage("Last Name is required!");
+exports.lastNameValidation = lastNameValidation;
 const providerValidation = (0, express_validator_1.body)("provider")
     .trim()
     .isIn(["email", "google"])
@@ -25,4 +27,15 @@ const passwordValidation = (0, express_validator_1.body)("password")
     .isLength({ min: 8 })
     .withMessage("Password length at least 8 characters!");
 exports.passwordValidation = passwordValidation;
+const strongPasswordValidation = (0, express_validator_1.body)("password")
+    .trim()
+    .isStrongPassword({
+    minLength: 8,
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+})
+    .withMessage("Password length at least 8 characters, 1 lowercase, 1 uppercase, 1 number, 1 symbol!");
+exports.strongPasswordValidation = strongPasswordValidation;
 //# sourceMappingURL=index.js.map
