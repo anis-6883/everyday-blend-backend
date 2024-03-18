@@ -1,11 +1,6 @@
 import { body } from "express-validator";
 
-const emailValidation = body("email")
-  .trim()
-  .isEmail()
-  .withMessage("Email is invalid!")
-  .notEmpty()
-  .withMessage("Email is required!");
+const emailValidation = body("email").trim().isEmail().withMessage("Email is invalid!").notEmpty().withMessage("Email is required!");
 
 const firstNameValidation = body("firstName").trim().notEmpty().withMessage("First Name is required!");
 
@@ -25,6 +20,8 @@ const passwordValidation = body("password")
   .isLength({ min: 8 })
   .withMessage("Password length at least 8 characters!");
 
+const weakPasswordValidation = body("password").trim().notEmpty().withMessage("Password is required!");
+
 const strongPasswordValidation = body("password")
   .trim()
   .isStrongPassword({
@@ -43,4 +40,5 @@ export {
   passwordValidation,
   providerValidation,
   strongPasswordValidation,
+  weakPasswordValidation,
 };

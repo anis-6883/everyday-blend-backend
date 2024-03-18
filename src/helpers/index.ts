@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { APP_SECRET } from "../configs/constants";
 
-const transformErrorsToMap = (errors: any[]) => {
+export const transformErrorsToMap = (errors: any[]) => {
   const errorMap: { [key: string]: string } = {};
 
   errors.forEach((error: { path: string; msg: string }) => {
@@ -13,19 +13,23 @@ const transformErrorsToMap = (errors: any[]) => {
   return errorMap;
 };
 
-const generateSalt = async () => {
+export const generateSalt = async () => {
   return await bcrypt.genSalt();
 };
 
-const generatePassword = async (password: string, salt: string) => {
+export const generatePassword = async (password: string, salt: string) => {
   return await bcrypt.hash(password, salt);
 };
 
-const generateSignature = (payload: any, expiresIn: number | string) => {
+export const generateSignature = (payload: any, expiresIn: number | string) => {
   return jwt.sign(payload, APP_SECRET, { expiresIn });
 };
 
-const excludeMany = async (array: any[], keys: any[]): Promise<any[]> => {
+export const validatePassword = async (enteredPassword: string, savedPassword: string, salt: string) => {
+  return (await generatePassword(enteredPassword, salt)) === savedPassword;
+};
+
+export const excludeMany = async (array: any[], keys: any[]): Promise<any[]> => {
   let newArray: any[] = [];
   array?.map((item) => {
     const temp: any = { ...item._doc };
@@ -37,11 +41,9 @@ const excludeMany = async (array: any[], keys: any[]): Promise<any[]> => {
   return newArray;
 };
 
-const exclude = (existingApp: any, keys: any[]) => {
+export const exclude = (existingApp: any, keys: any[]) => {
   for (let key of keys) {
     delete existingApp[key];
   }
   return existingApp;
 };
-
-export { exclude, excludeMany, generatePassword, generateSalt, generateSignature, transformErrorsToMap };
