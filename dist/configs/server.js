@@ -15,15 +15,17 @@ const config_1 = __importDefault(require("./config"));
 const database_1 = __importDefault(require("./database"));
 const app = (0, express_1.default)();
 const env = process.env.NODE_ENV || "development";
+// Batteries Include
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.static("public"));
 app.use((0, cors_1.default)(config_1.default[env].corsOptions));
-app.use(express_1.default.json({ limit: "100mb" }));
-app.use(express_1.default.urlencoded({ extended: true, limit: "100mb" }));
+app.use(express_1.default.json({ limit: "100kb" }));
+app.use(express_1.default.urlencoded({ extended: true, limit: "100kb" }));
 // Connect to MongoDB with Mongoose
 (0, database_1.default)(env);
+// Home Route
 app.get("/", (req, res) => {
-    res.json({ message: "Hello World!" });
+    res.json({ message: "Assalamu Alaikum Prithibi!" });
 });
 // Main Routes
 app.use("/api", verifyApiKeyHeader_1.default, webRoutes_1.default); // web

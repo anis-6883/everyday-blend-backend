@@ -1,13 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.strongPasswordValidation = exports.providerValidation = exports.passwordValidation = exports.lastNameValidation = exports.firstNameValidation = exports.emailValidation = void 0;
+exports.weakPasswordValidation = exports.strongPasswordValidation = exports.providerValidation = exports.passwordValidation = exports.lastNameValidation = exports.firstNameValidation = exports.emailValidation = void 0;
 const express_validator_1 = require("express-validator");
-const emailValidation = (0, express_validator_1.body)("email")
-    .trim()
-    .isEmail()
-    .withMessage("Email is invalid!")
-    .notEmpty()
-    .withMessage("Email is required!");
+const emailValidation = (0, express_validator_1.body)("email").trim().isEmail().withMessage("Email is invalid!").notEmpty().withMessage("Email is required!");
 exports.emailValidation = emailValidation;
 const firstNameValidation = (0, express_validator_1.body)("firstName").trim().notEmpty().withMessage("First Name is required!");
 exports.firstNameValidation = firstNameValidation;
@@ -27,6 +22,8 @@ const passwordValidation = (0, express_validator_1.body)("password")
     .isLength({ min: 8 })
     .withMessage("Password length at least 8 characters!");
 exports.passwordValidation = passwordValidation;
+const weakPasswordValidation = (0, express_validator_1.body)("password").trim().notEmpty().withMessage("Password is required!");
+exports.weakPasswordValidation = weakPasswordValidation;
 const strongPasswordValidation = (0, express_validator_1.body)("password")
     .trim()
     .isStrongPassword({

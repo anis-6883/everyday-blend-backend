@@ -22,6 +22,7 @@ const connectToDatabase = (env) => __awaiter(void 0, void 0, void 0, function* (
     }
     catch (error) {
         console.error("Error connecting to MongoDB:", error);
+        process.exit(1);
     }
 });
 exports.default = connectToDatabase;

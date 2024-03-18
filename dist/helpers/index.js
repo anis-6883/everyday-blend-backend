@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.transformErrorsToMap = exports.generateSignature = exports.generateSalt = exports.generatePassword = exports.excludeMany = exports.exclude = void 0;
+exports.exclude = exports.excludeMany = exports.validatePassword = exports.generateSignature = exports.generatePassword = exports.generateSalt = exports.transformErrorsToMap = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const constants_1 = require("../configs/constants");
@@ -37,6 +37,10 @@ const generateSignature = (payload, expiresIn) => {
     return jsonwebtoken_1.default.sign(payload, constants_1.APP_SECRET, { expiresIn });
 };
 exports.generateSignature = generateSignature;
+const validatePassword = (enteredPassword, savedPassword, salt) => __awaiter(void 0, void 0, void 0, function* () {
+    return (yield (0, exports.generatePassword)(enteredPassword, salt)) === savedPassword;
+});
+exports.validatePassword = validatePassword;
 const excludeMany = (array, keys) => __awaiter(void 0, void 0, void 0, function* () {
     let newArray = [];
     array === null || array === void 0 ? void 0 : array.map((item) => {
