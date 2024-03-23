@@ -1,6 +1,19 @@
 import bcrypt from "bcrypt";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { APP_SECRET } from "../configs/constants";
+
+export const asyncHandler = (func: any) => async (req: Request, res: Response) => {
+  try {
+    await func(req, res);
+  } catch (err) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+};
+
+export const apiResponse = (res: Response, statusCode: number, status: boolean, message: string, data?: any) => {
+  return res.status(statusCode).json({ status, message, data });
+};
 
 export const transformErrorsToMap = (errors: any[]) => {
   const errorMap: { [key: string]: string } = {};

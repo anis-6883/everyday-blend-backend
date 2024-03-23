@@ -1,8 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { EXPIRE_TIME } from "../../configs/constants";
-import { exclude, generatePassword, generateSalt, generateSignature, transformErrorsToMap, validatePassword } from "../../helpers";
-import Admin from "../../models/Admin";
+import {
+  exclude,
+  generatePassword,
+  generateSalt,
+  generateSignature,
+  transformErrorsToMap,
+  validatePassword,
+} from "../../helpers";
+import Admin from "../../models/admin.model";
 
 // Admin Registration
 export const adminRegistration = async (req: Request, res: Response, next: NextFunction) => {
@@ -88,7 +95,16 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
       60 * 60 * 24 * 60 // 60 Days
     );
 
-    const admin = exclude(existingAdmin._doc, ["_id", "__v", "verify_code", "password", "salt", "forget_code", "createdAt", "updatedAt"]);
+    const admin = exclude(existingAdmin._doc, [
+      "_id",
+      "__v",
+      "verify_code",
+      "password",
+      "salt",
+      "forget_code",
+      "createdAt",
+      "updatedAt",
+    ]);
 
     return res.json({
       status: true,

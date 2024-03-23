@@ -1,25 +1,25 @@
 import mongoose from "mongoose";
 
-const adminSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
       required: true,
+      trim: true,
     },
     lastName: {
       type: String,
       required: true,
+      trim: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      index: true,
     },
     password: {
-      type: String,
-      required: true,
-    },
-    salt: {
       type: String,
       required: true,
     },
@@ -27,9 +27,13 @@ const adminSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    role: {
+    salt: {
       type: String,
-      default: "admin",
+      required: true,
+    },
+    refreshToken: {
+      type: String,
+      default: null,
     },
     status: {
       type: String,
@@ -38,9 +42,10 @@ const adminSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    versionKey: false,
   }
 );
 
-const Admin = mongoose.model("Admin", adminSchema);
+const User = mongoose.model("User", userSchema);
 
-export default Admin;
+export default User;

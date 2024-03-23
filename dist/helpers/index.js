@@ -12,10 +12,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exclude = exports.excludeMany = exports.validatePassword = exports.generateSignature = exports.generatePassword = exports.generateSalt = exports.transformErrorsToMap = void 0;
+exports.exclude = exports.excludeMany = exports.validatePassword = exports.generateSignature = exports.generatePassword = exports.generateSalt = exports.transformErrorsToMap = exports.apiResponse = exports.asyncHandler = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const constants_1 = require("../configs/constants");
+const asyncHandler = (func) => (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield func(req, res);
+    }
+    catch (err) {
+        return res.status(400).json({ status: false, message: err.message });
+    }
+});
+exports.asyncHandler = asyncHandler;
+const apiResponse = (res, statusCode, status, message, data) => {
+    return res.status(statusCode).json({ status, message, data });
+};
+exports.apiResponse = apiResponse;
 const transformErrorsToMap = (errors) => {
     const errorMap = {};
     errors.forEach((error) => {

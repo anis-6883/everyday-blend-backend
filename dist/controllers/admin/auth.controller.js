@@ -16,7 +16,7 @@ exports.adminLogin = exports.adminRegistration = void 0;
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../configs/constants");
 const helpers_1 = require("../../helpers");
-const Admin_1 = __importDefault(require("../../models/Admin"));
+const admin_model_1 = __importDefault(require("../../models/admin.model"));
 // Admin Registration
 const adminRegistration = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -26,13 +26,13 @@ const adminRegistration = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             return res.json({ status: false, errors: errorMessages });
         }
         const { email, password, firstName, lastName } = req.body;
-        const existingAdmin = yield Admin_1.default.findOne({ email });
+        const existingAdmin = yield admin_model_1.default.findOne({ email });
         if (existingAdmin) {
             return res.json({ status: false, message: "This email already exist!" });
         }
         const salt = yield (0, helpers_1.generateSalt)();
         const hashedPassword = yield (0, helpers_1.generatePassword)(password, salt);
-        const newAdmin = new Admin_1.default({
+        const newAdmin = new admin_model_1.default({
             firstName,
             lastName,
             email,
@@ -62,7 +62,7 @@ const adminLogin = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             return res.json({ status: false, errors: errorMessages });
         }
         const { email, password } = req.body;
-        const existingAdmin = yield Admin_1.default.findOne({ email });
+        const existingAdmin = yield admin_model_1.default.findOne({ email });
         if (!existingAdmin) {
             return res.json({ status: false, message: "Your credentials are incorrect!" });
         }
@@ -80,7 +80,16 @@ const adminLogin = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             role: existingAdmin.role,
         }, 60 * 60 * 24 * 60 // 60 Days
         );
-        const admin = (0, helpers_1.exclude)(existingAdmin._doc, ["_id", "__v", "verify_code", "password", "salt", "forget_code", "createdAt", "updatedAt"]);
+        const admin = (0, helpers_1.exclude)(existingAdmin._doc, [
+            "_id",
+            "__v",
+            "verify_code",
+            "password",
+            "salt",
+            "forget_code",
+            "createdAt",
+            "updatedAt",
+        ]);
         return res.json({
             status: true,
             message: "Admin Login Successfully!",
